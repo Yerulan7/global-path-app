@@ -1,0 +1,30 @@
+.nav { display: flex; flex-direction: column; gap: 2px; }
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 150ms ease;
+  cursor: pointer;
+}
+
+.item:hover { background: var(--surface-hover); }
+
+.label {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.active {
+  background: var(--surface-card);
+  box-shadow: var(--shadow-nav-active);
+}
+
+.active .label {
+  font-weight: 600;
+  color: var(--ink-primary);
+}

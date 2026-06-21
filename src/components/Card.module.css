@@ -1,0 +1,10 @@
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.pad_default { padding: 24px 28px; }
+.pad_compact { padding: 24px 24px; }
+.pad_large   { padding: 26px 28px; }

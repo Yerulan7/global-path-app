@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Backgrounds */
+  --bg-paper:    #f4f1ea;
+  --bg-sidebar:  #f0ece2;
+  --bg-topbar:   #f7f4ee;
+
+  /* Surfaces */
+  --surface-card:   #fffdf9;
+  --surface-inset:  #f6f1e8;
+  --surface-hover:  #e9e3d7;
+  --surface-hover-ghost: #f3eee5;
+
+  /* Ink */
+  --ink-primary: #221e18;
+  --ink-body:    #3a342c;
+  --ink-muted:   #5f574c;
+  --ink-faint:   #8a8073;
+  --ink-ghost:   #a89e90;
+
+  /* Lines */
+  --line-hairline: #e7e0d4;
+  --line-divider:  #efe9dd;
+  --line-card-border: #e4ddd0;
+
+  /* Accents */
+  --accent-pine:       #2e5d49;
+  --accent-pine-hover: #264c3c;
+  --accent-pine-soft:  #e3ece4;
+  --accent-pine-soft2: #dfeae1;
+  --accent-terracotta: #b85c38;
+  --accent-olive:      #7a8a4f;
+
+  /* Semantic */
+  --warn-amber:       #a9762a;
+  --warn-amber-text:  #7a5e2a;
+  --warn-amber-bg:    #f7efe0;
+  --warn-amber-border:#efe3cc;
+  --error-brick:      #a23b2f;
+  --info-clay-text:   #8a5a2a;
+  --info-clay-bg:     #f6efe4;
+  --info-clay-border: #ece1cd;
+
+  /* Progress track */
+  --track-bg: #ece4d6;
+
+  /* Typography */
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-sans:  'Hanken Grotesk', system-ui, sans-serif;
+
+  /* Radii */
+  --radius-card:   12px;
+  --radius-btn:    9px;
+  --radius-inset:  9px;
+  --radius-pill:   20px;
+  --radius-icon:   9px;
+
+  /* Shadow */
+  --shadow-card: 0 1px 2px rgba(33, 29, 24, 0.03);
+  --shadow-nav-active: 0 1px 2px rgba(33, 29, 24, 0.05);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--bg-paper); color: var(--ink-primary); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--accent-pine-soft2); }
