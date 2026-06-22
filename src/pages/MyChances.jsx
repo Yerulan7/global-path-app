@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import Card from '../components/Card';
+import { fetchPrograms } from '../api/programs';
 import styles from './MyChances.module.css';
 
 // ── Arc gauge ─────────────────────────────────────────────────────────────────
@@ -6,7 +8,6 @@ import styles from './MyChances.module.css';
 function ArcGauge({ pct }) {
   const cx = 100, cy = 100, r = 74;
   const strokeW = 10;
-  // 270° arc, starts at 135° (bottom-left), ends at 45° (bottom-right)
   const startAngle = 135;
   const totalDeg   = 270;
   const fillDeg    = (pct / 100) * totalDeg;
@@ -28,11 +29,8 @@ function ArcGauge({ pct }) {
 
   return (
     <svg viewBox="0 0 200 200" className={styles.gauge}>
-      {/* track */}
       <path d={trackPath} fill="none" stroke="var(--track-bg)" strokeWidth={strokeW} strokeLinecap="round" />
-      {/* fill */}
       <path d={fillPath}  fill="none" stroke="var(--accent-pine)" strokeWidth={strokeW} strokeLinecap="round" />
-      {/* label */}
       <text x={cx} y={cy - 8} textAnchor="middle" className={styles.gaugeNum}>{pct}</text>
       <text x={cx + 24} y={cy - 2} textAnchor="start" className={styles.gaugePct}>%</text>
       <text x={cx} y={cy + 18} textAnchor="middle" className={styles.gaugeLabel}>overall chance</text>
@@ -73,14 +71,11 @@ function ScoreHistory({ points }) {
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className={styles.chartSvg}>
-      {/* grid lines */}
       {[0, 0.5, 1].map(t => (
         <line key={t} x1={PAD.l} x2={W - PAD.r} y1={PAD.t + iH * (1 - t)} y2={PAD.t + iH * (1 - t)}
           stroke="var(--line-divider)" strokeWidth="1" />
       ))}
-      {/* line */}
       <path d={pathD} fill="none" stroke="var(--accent-pine)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      {/* dots + labels */}
       {points.map((p, i) => (
         <g key={i}>
           <circle cx={x(i)} cy={y(p.v)} r="3.5" fill="var(--accent-pine)" />
@@ -88,7 +83,6 @@ function ScoreHistory({ points }) {
           <text x={x(i)} y={H - 4} textAnchor="middle" className={styles.chartLabel}>{p.label}</text>
         </g>
       ))}
-      {/* trailing annotation */}
       <text x={x(points.length - 1) + 8} y={y(last.v)} className={styles.chartAnnotation} dominantBaseline="middle">
         ↑ +20 pts in 2 weeks
       </text>
@@ -98,7 +92,35 @@ function ScoreHistory({ points }) {
 
 // ── University breakdown card ─────────────────────────────────────────────────
 
-function UniversityCard({ name, city, overall, factors, note }) {
+const PINE  = 'var(--accent-pine)';
+const OLIVE = 'var(--accent-olive)';
+const TERRA = 'var(--accent-terracotta)';
+
+// Derive per-factor bars from program DB row + student profile (stub values for now)
+function programToUniversityCard(prog) {
+  const ieltsOk = prog.ielts_min === null || prog.ielts_min <= 6.0;
+  const langPct = ieltsOk ? 70 : 40;
+  const langColor = ieltsOk ? OLIVE : TERRA;
+  return {
+    id: prog.id,
+    name: prog.university_name,
+    city: prog.city,
+    programName: prog.name,
+    overall: Math.round((82 + 60 + 85 + langPct) / 4),
+    ieltsMin: prog.ielts_min,
+    factors: [
+      { label: 'Essay',     pct: 82,      color: PINE },
+      { label: 'Documents', pct: 60,      color: TERRA },
+      { label: 'GPA',       pct: 85,      color: OLIVE },
+      { label: 'Language',  pct: langPct, color: langColor },
+    ],
+    note: prog.ielts_min
+      ? `IELTS min ${prog.ielts_min} — ${ieltsOk ? 'once submitted, your profile is strong.' : 'your score is missing. This is your biggest risk factor.'}`
+      : null,
+  };
+}
+
+function UniversityCard({ name, city, programName, overall, factors, note }) {
   return (
     <div className={styles.uniCard}>
       <div className={styles.uniHeader}>
@@ -108,11 +130,10 @@ function UniversityCard({ name, city, overall, factors, note }) {
         </div>
         <span className={styles.uniPct}>{overall}%</span>
       </div>
-      {/* full-width overall bar */}
+      <div className={styles.uniProgram}>{programName}</div>
       <div className={styles.uniBar}>
         <div className={styles.uniBarFill} style={{ width: `${overall}%` }} />
       </div>
-      {/* factor grid 2×2 */}
       <div className={styles.factorGrid}>
         {factors.map((f) => (
           <MiniBar key={f.label} label={f.label} pct={f.pct} color={f.color} />
@@ -123,40 +144,13 @@ function UniversityCard({ name, city, overall, factors, note }) {
   );
 }
 
-// ── Data ─────────────────────────────────────────────────────────────────────
-
-const PINE  = 'var(--accent-pine)';
-const OLIVE = 'var(--accent-olive)';
-const TERRA = 'var(--accent-terracotta)';
+// ── Static data (not from DB yet) ─────────────────────────────────────────────
 
 const factors = [
   { label: 'Essay quality', pct: 82, color: PINE },
   { label: 'Documents',     pct: 60, color: TERRA },
   { label: 'GPA estimate',  pct: 85, color: OLIVE },
   { label: 'Language cert', pct: 40, color: TERRA },
-];
-
-const universities = [
-  {
-    name: 'Politecnico di Torino', city: 'Turin', overall: 75,
-    factors: [
-      { label: 'Essay',     pct: 82, color: PINE  },
-      { label: 'Documents', pct: 60, color: TERRA },
-      { label: 'GPA',       pct: 85, color: OLIVE },
-      { label: 'Language',  pct: 40, color: TERRA },
-    ],
-    note: 'IELTS min 6.5 — your score is missing. This is your biggest risk factor.',
-  },
-  {
-    name: 'Università di Trento', city: 'Trento', overall: 81,
-    factors: [
-      { label: 'Essay',     pct: 85, color: PINE  },
-      { label: 'Documents', pct: 65, color: TERRA },
-      { label: 'GPA',       pct: 88, color: OLIVE },
-      { label: 'Language',  pct: 70, color: OLIVE },
-    ],
-    note: 'IELTS min 6.0 — once submitted, your profile is strong.',
-  },
 ];
 
 const improvements = [
@@ -176,6 +170,19 @@ const history = [
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MyChances() {
+  const [programs, setPrograms] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+
+  useEffect(() => {
+    fetchPrograms({ targetCountry: 'IT', degreeLevel: 'bachelor' })
+      .then(rows => setPrograms(rows))
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const universityCards = programs.map(programToUniversityCard);
+
   return (
     <div className={styles.layout}>
       {/* LEFT */}
@@ -194,7 +201,6 @@ export default function MyChances() {
 
           <div className={styles.divider} />
 
-          {/* Factor bars */}
           <div className={styles.factorBars}>
             {factors.map((f) => (
               <div key={f.label} className={styles.factorRow}>
@@ -209,7 +215,6 @@ export default function MyChances() {
 
           <div className={styles.divider} />
 
-          {/* Weakness note */}
           <div className={styles.weakNote}>
             <div className={styles.weakTitle}>⚠ Weakest factor: Language certificate (40%)</div>
             <p className={styles.weakBody}>Upload your IELTS or Duolingo score to boost your chances by ~12 points.</p>
@@ -227,14 +232,27 @@ export default function MyChances() {
       {/* RIGHT */}
       <div className={styles.right}>
 
-        {/* Per university breakdown */}
         <div className={styles.breakdownHeader}>
           <span className={styles.sectionTitle}>Per university breakdown</span>
           <a className={styles.pineLink}>How is this calculated? →</a>
         </div>
 
-        {universities.map((u) => (
-          <Card key={u.name} padding="compact">
+        {loading && (
+          <div className={styles.stateMsg}>Loading programs…</div>
+        )}
+
+        {error && (
+          <div className={styles.stateMsg} style={{ color: 'var(--accent-terracotta)' }}>
+            Could not load programs — is the backend running?
+          </div>
+        )}
+
+        {!loading && !error && universityCards.length === 0 && (
+          <div className={styles.stateMsg}>No programs found. Run seed.sql in Supabase.</div>
+        )}
+
+        {universityCards.map((u) => (
+          <Card key={u.id} padding="compact">
             <UniversityCard {...u} />
           </Card>
         ))}

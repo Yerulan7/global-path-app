@@ -66,7 +66,8 @@
 
 /* ── University card ── */
 .uniCard {}
-.uniHeader { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.uniHeader { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+.uniProgram { font-size: 12px; color: var(--ink-ghost); margin-bottom: 10px; }
 .uniName { font-size: 15px; font-weight: 600; color: var(--ink-primary); margin-right: 8px; }
 .uniCity { font-size: 13px; color: var(--ink-ghost); }
 .uniPct  {
@@ -104,4 +105,11 @@
 }
 @media (max-width: 768px) {
   .layout { padding: 20px 16px; }
+}
+
+.stateMsg {
+  font-size: 14px;
+  color: var(--ink-ghost);
+  padding: 24px 0;
+  text-align: center;
 }
