@@ -1,5 +1,4 @@
 import Card from '../components/Card';
-import Button from '../components/Button';
 import styles from './MyChances.module.css';
 
 // ── Arc gauge ─────────────────────────────────────────────────────────────────

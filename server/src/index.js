@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import advisorRouter from './routes/advisor.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -12,6 +13,8 @@ app.use(express.json());
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'global-path-server', time: new Date().toISOString() });
 });
+
+app.use('/api/advisor', advisorRouter);
 
 app.listen(PORT, () => {
   console.log(`API server running on http://localhost:${PORT}`);

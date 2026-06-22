@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import styles from './MyJourney.module.css';
-import Card from '../components/Card';
 
 // ── Foundation steps ──────────────────────────────────────────────────────────
 

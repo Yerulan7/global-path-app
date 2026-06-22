@@ -163,7 +163,7 @@ export default function EssayAnalyst() {
             <div className={styles.essayCard}>
               {inlineOn ? <EssayText filter={filter} /> : (
                 <div className={styles.essayText}>
-                  {ESSAY_SEGMENTS.map((s, i) => s.text).join('')}
+                  {ESSAY_SEGMENTS.map(s => s.text).join('')}
                 </div>
               )}
             </div>

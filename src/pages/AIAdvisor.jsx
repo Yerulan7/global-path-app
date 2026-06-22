@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { sendToAdvisor } from '../api/advisor';
 import styles from './AIAdvisor.module.css';
 
 // ── Simple bold-text renderer ─────────────────────────────────────────────────
@@ -9,8 +10,8 @@ function RichText({ text }) {
       {parts.map((p, i) =>
         p.startsWith('**') && p.endsWith('**')
           ? <strong key={i}>{p.slice(2, -2)}</strong>
-          : p.split('\n').map((line, j) => (
-              <span key={`${i}-${j}`}>{line}{j < p.split('\n').length - 1 && <br />}</span>
+          : p.split('\n').map((line, j, arr) => (
+              <span key={`${i}-${j}`}>{line}{j < arr.length - 1 && <br />}</span>
             ))
       )}
     </>
@@ -20,19 +21,9 @@ function RichText({ text }) {
 // ── Initial messages ──────────────────────────────────────────────────────────
 const INITIAL_MESSAGES = [
   {
-    role: 'ai',
-    text: 'Welcome to Global Path AI!\n\nI\'m your expert consultant for university admissions in Italy. Your profile: Engineering/IT Master\'s, English B2+.\n\nWhat would you like to explore first?',
+    role: 'assistant',
+    content: 'Welcome to Global Path AI!\n\nI\'m your expert consultant for university admissions in Italy. Your profile: Engineering/IT Master\'s, English B2+.\n\nWhat would you like to explore first?',
     time: '2:34 PM',
-  },
-  {
-    role: 'user',
-    text: 'I\'m thinking about Turin or Bologna, budget is €700/month',
-    time: '2:35 PM',
-  },
-  {
-    role: 'ai',
-    text: 'Great choice! Both cities offer excellent universities and are more affordable than Milan or Rome. Let me break down what you can expect:\n\n**Turin:**\n• Universities: Politecnico di Torino (top engineering), University of Turin\n• Monthly budget: €600-800 (rent €300-450, food €150-200, transport €35)\n• DSU scholarship available: Up to €5,800/year + free meals\n• Housing: Student residences from €250, shared apartments €300-400',
-    time: '2:35 PM',
   },
 ];
 
@@ -54,22 +45,46 @@ const SUGGESTED_SECONDARY = [
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function AIAdvisor() {
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft]       = useState('');
+  const [loading, setLoading]   = useState(false);
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  function send(text) {
-    if (!text.trim()) return;
+  async function send(text) {
+    if (!text.trim() || loading) return;
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setMessages(prev => [
-      ...prev,
-      { role: 'user', text: text.trim(), time: now },
-      { role: 'ai', text: 'Thanks for your question! I\'m processing that now — in a real integration this would call the Claude API.', time: now },
-    ]);
+
+    const userMsg = { role: 'user', content: text.trim(), time: now };
+    const aiPlaceholder = { role: 'assistant', content: '', time: now };
+
+    setMessages(prev => [...prev, userMsg, aiPlaceholder]);
     setDraft('');
+    setLoading(true);
+
+    // Build history in the shape the backend expects: { role, content }
+    const history = [...messages, userMsg].map(({ role, content }) => ({ role, content }));
+
+    try {
+      await sendToAdvisor(history, (delta) => {
+        setMessages(prev => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          next[next.length - 1] = { ...last, content: last.content + delta };
+          return next;
+        });
+      });
+    } catch {
+      setMessages(prev => {
+        const next = [...prev];
+        next[next.length - 1] = { ...next[next.length - 1], content: 'Something went wrong. Try again.' };
+        return next;
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleKey(e) {
@@ -97,9 +112,12 @@ export default function AIAdvisor() {
       <div className={styles.chatArea}>
         {messages.map((msg, i) => (
           <div key={i} className={`${styles.msgRow} ${msg.role === 'user' ? styles.msgRowUser : ''}`}>
-            {msg.role === 'ai' && <div className={styles.aiAvatar}>AI</div>}
+            {msg.role === 'assistant' && <div className={styles.aiAvatar}>AI</div>}
             <div className={`${styles.bubble} ${msg.role === 'user' ? styles.bubbleUser : styles.bubbleAi}`}>
-              <RichText text={msg.text} />
+              {msg.role === 'assistant' && msg.content === '' && loading
+                ? <span className={styles.cursor}>▍</span>
+                : <RichText text={msg.content} />
+              }
               <div className={styles.msgTime}>{msg.time}</div>
             </div>
             {msg.role === 'user' && <div className={styles.userAvatar}>U</div>}
@@ -110,7 +128,6 @@ export default function AIAdvisor() {
 
       {/* Input area */}
       <div className={styles.inputWrap}>
-        {/* Context bar */}
         <div className={styles.contextBar}>
           <span className={styles.contextLabel}>Your context:</span>
           {['GPA 4.8', 'Turin', 'Engineering'].map(tag => (
@@ -127,14 +144,15 @@ export default function AIAdvisor() {
             onChange={e => setDraft(e.target.value)}
             onKeyDown={handleKey}
             rows={1}
+            disabled={loading}
           />
           <div className={styles.inputActions}>
-            <button className={styles.attachBtn}>
+            <button className={styles.attachBtn} disabled={loading}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
               </svg>
             </button>
-            <button className={styles.sendBtn} onClick={() => send(draft)}>
+            <button className={`${styles.sendBtn} ${loading ? styles.sendBtnLoading : ''}`} onClick={() => send(draft)} disabled={loading}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
               </svg>
@@ -152,12 +170,12 @@ export default function AIAdvisor() {
         <div className={styles.suggestEyebrow}>BASED ON YOUR DOCUMENT CHECK</div>
         <div className={styles.suggestPrimary}>
           {SUGGESTED_PRIMARY.map(s => (
-            <button key={s} className={styles.suggestChip} onClick={() => send(s)}>{s}</button>
+            <button key={s} className={styles.suggestChip} onClick={() => send(s)} disabled={loading}>{s}</button>
           ))}
         </div>
         <div className={styles.suggestSecondary}>
           {SUGGESTED_SECONDARY.map(s => (
-            <button key={s} className={styles.suggestSmall} onClick={() => send(s)}>{s}</button>
+            <button key={s} className={styles.suggestSmall} onClick={() => send(s)} disabled={loading}>{s}</button>
           ))}
         </div>
       </div>

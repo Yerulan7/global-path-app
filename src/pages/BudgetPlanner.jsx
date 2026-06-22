@@ -167,7 +167,7 @@ export default function BudgetPlanner() {
   );
 }
 
-function SliderRow({ label, value, min, max, onChange, disabled, note }) {
+function SliderRow({ label, value, min, max, onChange, disabled }) {
   return (
     <div className={styles.sliderRow}>
       <span className={styles.sliderLabel}>{label}</span>
